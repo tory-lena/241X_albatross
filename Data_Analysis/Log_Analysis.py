@@ -43,6 +43,24 @@ def computeAOA(GPS_VelN,GPS_VelE,GPS_VelD,roll,pitch,yaw):
 
     return alpha
 
+def get_max_DL(lift, drag, throttle, b, S, rho, GPS_VelN,GPS_VelE,GPS_VelD):
+    e=0.85 #Oswald factor ~0.8-0.9
+    Cd0=np.zeros(len(lift))
+    for i in range(len(lift)):
+        if throttle>10**(-8.): continue
+        
+        vel = np.norm(np.array([GPS_VelN[i],GPS_VelE[i],GPS_VelD[i]]))
+        Cd=2*drag[i]/(rho*vel*S)
+        Cl=2*lift[i]/(rho*vel*S)
+        Cd0[i]=Cd-Cl**2./(np.pi*S*e)
+        
+    #get avg: might choose a different model here!
+    Cd0_avg=np.sum(Cd0)/np.count_nonzero(Cd0)
+    #compute max_DL
+    max_DL=.5*np.sqrt(np.pi*b**2./S/Cd0_avg)
+    
+    return max_DL
+
 
 
 
@@ -70,10 +88,24 @@ if __name__  == "__main__":
 
         drag[i],lift[i] = computeDragLift(IMU_AccX[i],IMU_AccY[i],IMU_AccZ[i],GPS_VelN[i],GPS_VelE[i],GPS_VelD[i],roll[i],pitch[i],yaw[i],g,mass)
         alpha[i] = computeAOA(GPS_VelN[i],GPS_VelE[i],GPS_VelD[i],roll[i],pitch[i],yaw[i])
-        if(throttle[i] > 1e-8):
-            drag[i],lift[i],alpha[i] = 0.0, 0.0, 0.0
-
-
+        #if(throttle[i] > 1e-8):
+         #   drag[i],lift[i],alpha[i] = 0.0, 0.0, 0.0
+            
+    for i in range(len):
+        v_min, L=(200.,200.) #default values
+        vel = np.array([GPS_VelN[i],GPS_VelE[i],GPS_VelD[i]])
+        if throttle[i]<10**(-8.) and np.linalg.norm(vel)<v_min:
+            v_min=vel
+            L=lift[i]
+            
+    rho=1.1455 #kg.m-3
+    S= #wing area
+    Cl_max=2*L/(rho*vel**2.0 *S)
+    
+    #find stall speed
+    v_stall=np.sqrt(2*mass*g/(rho*S*Cl_max))
+    
+    max_DL= get_max_DL(lift, drag, throttle, b, S, rho, GPS_VelN,GPS_VelE,GPS_VelD)
 
     plt.figure(1)
     plt.plot(alpha,lift,'ro')
