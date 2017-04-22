@@ -99,7 +99,8 @@ if __name__  == "__main__":
             L=lift[i]
             
     rho=1.1455 #kg.m-3
-    S= #wing area
+    b=1.55 #m
+    S=b*(0.21+0.18)/2. #m^2 rough approx!!
     Cl_max=2*L/(rho*vel**2.0 *S)
     
     #find stall speed
